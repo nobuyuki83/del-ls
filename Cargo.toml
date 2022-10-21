@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Nobuyuki Umetani <n.umetani@gmail.com>"]
 license = "MIT"
-repository = "https://github.com/nobuyuki83/del-msh/"
-description = "sparse solver library for prototyping"
+repository = "https://github.com/nobuyuki83/del-ls"
+description = "sparse solver library for research prototyping"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
