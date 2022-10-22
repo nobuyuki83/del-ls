@@ -1,3 +1,3 @@
-pub mod ls_sparse;
-pub mod ls_solver_sparse;
+pub mod sparse;
+pub mod solver_sparse;
 

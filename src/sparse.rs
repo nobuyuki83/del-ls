@@ -33,13 +33,13 @@ BlockSparseMatrix<MAT> {
         self.col_ind = colind.clone();
         self.row_ptr = rowptr.clone();
         let ncrs = self.col_ind[self.nrowblk];
-        assert!(ncrs == rowptr.len());
+        assert_eq!(ncrs, rowptr.len());
         self.val_crs.resize_with(ncrs, Default::default);
         self.val_dia.resize_with(self.nrowblk, Default::default);
     }
 
     pub fn set_zero(&mut self) {
-        assert!(self.val_crs.len() == self.row_ptr.len());
+        assert_eq!(self.val_crs.len(), self.row_ptr.len());
         for m in self.val_dia.iter_mut() { m.set_zero() };
         for m in self.val_crs.iter_mut() { m.set_zero() };
     }
@@ -50,7 +50,7 @@ BlockSparseMatrix<MAT> {
         colblk_idxs: &[usize],
         emat: &[MAT],
         merge_buffer: &mut Vec<usize>) {
-        assert!(emat.len() == rowblk_idxs.len() * colblk_idxs.len());
+        assert_eq!(emat.len(), rowblk_idxs.len() * colblk_idxs.len());
         merge_buffer.resize(self.ncolblk, usize::MAX);
         for irow in 0..rowblk_idxs.len() {
             let iblk1 = rowblk_idxs[irow];
@@ -68,7 +68,7 @@ BlockSparseMatrix<MAT> {
                 } else {  // Marge Non-Diagonal
                     assert!(merge_buffer[jblk1] < self.row_ptr.len());
                     let jpsup1 = merge_buffer[jblk1];
-                    assert!(self.row_ptr[jpsup1] == jblk1);
+                    assert_eq!(self.row_ptr[jpsup1], jblk1);
                     self.val_crs[jpsup1] += emat[irow * colblk_idxs.len() + jcol];
                 }
             }
@@ -94,7 +94,7 @@ pub fn gemm_for_block_sparse_matrix_nalgebra<
     mat: &BlockSparseMatrix<nalgebra::Matrix<T, R, R, SMAT>>,
     rhs: &Vec<nalgebra::Matrix<T, R, C, SVEC>>)
 {
-    assert!(lhs.len() == mat.nrowblk);
+    assert_eq!(lhs.len(), mat.nrowblk);
     for m in lhs.iter_mut() { (*m).scale_mut(beta); };
     let fone: T = T::from_f32(1.0).unwrap();
     for iblk in 0..mat.nrowblk {
@@ -122,7 +122,7 @@ pub fn gemm_for_sparse_matrix<T>(
           f32: num_traits::AsPrimitive<T>
 
 {
-    assert!(lhs.len() == mat.nrowblk);
+    assert_eq!(lhs.len(), mat.nrowblk);
     for m in lhs.iter_mut() { *m *= beta; };
     for iblk in 0..mat.nrowblk {
         for icrs in mat.col_ind[iblk]..mat.col_ind[iblk + 1] {

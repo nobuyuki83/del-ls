@@ -2,7 +2,7 @@ fn dot_vectors(
     v0: &Vec<f32>,
     v1: &Vec<f32>) -> f32
 {
-    assert!(v0.len() == v1.len());
+    assert_eq!(v0.len(), v1.len());
     let mut sum: f32 = 0.;
     for i in 0..v0.len() {
         sum += v0[i] * v1[i];
@@ -14,7 +14,7 @@ fn add_scaled_vector(
     u: &mut Vec<f32>,
     alpha: f32,
     p: &Vec<f32>) {
-    assert!(u.len() == p.len());
+    assert_eq!(u.len(), p.len());
     for i in 0..p.len() {
         u[i] += alpha * p[i];
     }
@@ -24,7 +24,7 @@ fn scale_and_add_vec(
     p: &mut Vec<f32>,
     beta: f32,
     r: &Vec<f32>) { // {p} = {r} + beta*{p}
-    assert!(r.len() == p.len());
+    assert_eq!(r.len(), p.len());
     for i in 0..p.len() {
         p[i] = r[i] + beta * p[i];
     }
@@ -41,14 +41,14 @@ fn set_zero(
 fn copy(
     p: &mut Vec<f32>,
     u: &Vec<f32>) {
-    assert!(p.len() == u.len());
+    assert_eq!(p.len(), u.len());
     p.resize(u.len(), 0.);
     for i in 0..p.len() {
         p[i] = u[i];
     }
 }
 
-use crate::ls_sparse;
+use crate::sparse;
 
 pub fn solve_cg(
     r_vec: &mut Vec<f32>,
@@ -57,7 +57,7 @@ pub fn solve_cg(
     p_vec: &mut Vec<f32>,
     conv_ratio_tol: f32,
     max_iteration: usize,
-    mat: &ls_sparse::BlockSparseMatrix<f32>) -> Vec<f32> {
+    mat: &sparse::BlockSparseMatrix<f32>) -> Vec<f32> {
     {
         let n = r_vec.len();
         u_vec.resize(n, 0.);
@@ -73,7 +73,7 @@ pub fn solve_cg(
     for _iitr in 0..max_iteration {
         let alpha;
         {  // alpha = (r,r) / (p,Ap)
-            ls_sparse::gemm_for_sparse_matrix(
+            sparse::gemm_for_sparse_matrix(
                 ap_vec,
                 0.0, 1.0, &mat, &p_vec); // {Ap_vec} = [mat]*{p_vec}
             let pap = dot_vectors(p_vec, ap_vec);
