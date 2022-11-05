@@ -3,7 +3,7 @@ pub struct BlockSparseMatrix<MAT> {
     ncolblk: usize,
     col_ind: Vec<usize>,
     row_ptr: Vec<usize>,
-    val_crs: Vec<MAT>,
+    pub val_crs: Vec<MAT>,
     pub val_dia: Vec<MAT>,
 }
 
@@ -21,6 +21,17 @@ BlockSparseMatrix<MAT> {
             row_ptr: Vec::<usize>::new(),
             val_crs: Vec::<MAT>::new(),
             val_dia: Vec::<MAT>::new(),
+        }
+    }
+
+    pub fn clone(&self) -> Self {
+        BlockSparseMatrix {
+            ncolblk: self.ncolblk,
+            nrowblk: self.nrowblk,
+            col_ind: self.col_ind.clone(),
+            row_ptr: self.row_ptr.clone(),
+            val_crs: self.val_crs.clone(),
+            val_dia: self.val_dia.clone(),
         }
     }
 
