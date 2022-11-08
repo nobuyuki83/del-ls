@@ -1,7 +1,7 @@
 
 
 pub struct Solver {
-    pub sparse : crate::sparse::BlockSparseMatrix<f32>,
+    pub sparse : crate::sparse_square::Matrix<f32>,
     pub merge_buffer : Vec<usize>,
     pub r_vec : Vec<f32>,
     pub u_vec : Vec<f32>,
@@ -15,7 +15,7 @@ pub struct Solver {
 impl Solver {
     pub fn new() -> Self {
         Solver {
-            sparse: crate::sparse::BlockSparseMatrix::<f32>::new(),
+            sparse: crate::sparse_square::Matrix::<f32>::new(),
             merge_buffer : Vec::<usize>::new(),
             ap_vec : Vec::<f32>::new(),
             p_vec : Vec::<f32>::new(),
