@@ -38,7 +38,7 @@ fn test_block33() {
     let mut sparse = crate::sparse_square::Matrix::<MAT>::new();
     let colind = vec![0, 2, 5, 8, 10];
     let rowptr = vec![0, 1, 0, 1, 2, 1, 2, 3, 2, 3];
-    sparse.initialize_as_square_matrix(&colind, &rowptr);
+    sparse.symbolic_initialization(&colind, &rowptr);
     sparse.set_zero();
     {
         let emat = [

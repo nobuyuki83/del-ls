@@ -8,6 +8,7 @@ Originally, the code is written in C++ in [DelFEM2](https://github.com/nobuyuki8
 
 - [x] sparse square matrix
 - [x] sparse block square matrix
-- [x] conjugate gradient method
+- [x] sparse matrix multiplication
+- [x] Conjugate Gradient (CG) method
 - [x] Incomplete LU preconditioner (ILU0 and ILUk)
-- [x] incomplete Choleskey conjugate gradient method 
+- [x] Incomplete Choleskey Conjugate Gradient (ICCG) method 
