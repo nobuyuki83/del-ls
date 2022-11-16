@@ -1,8 +1,8 @@
 //! (block) sparse matrix class and functions
 
 /// block sparse matrix class
-/// * `nrowblk` - number of row blocks
-/// * `ncolblk` - number of column blocks
+/// Compressed Row Storage (CRS) data strcuture
+/// * `num_blk` - number of row and col blocks
 pub struct Matrix<MAT> {
     pub num_blk: usize,
     pub row2idx: Vec<usize>,
@@ -12,7 +12,7 @@ pub struct Matrix<MAT> {
 }
 
 impl<
-    MAT: num_traits::Zero // set_zero
+    MAT: 'static + num_traits::Zero // set_zero
     + std::default::Default
     + std::ops::AddAssign // merge
     + Copy + std::fmt::Display>
@@ -20,7 +20,7 @@ Matrix<MAT> {
     pub fn new() -> Self {
         Matrix {
             num_blk: 0,
-            row2idx: vec![0],
+            row2idx: vec!(0),
             idx2col: Vec::<usize>::new(),
             idx2val: Vec::<MAT>::new(),
             row2val: Vec::<MAT>::new(),
@@ -37,7 +37,8 @@ Matrix<MAT> {
         }
     }
 
-    pub fn initialize_as_square_matrix(
+    /// set non-zero pattern
+    pub fn symbolic_initialization(
         &mut self,
         row2idx: &Vec<usize>,
         idx2col: &Vec<usize>) {
@@ -50,45 +51,49 @@ Matrix<MAT> {
         self.row2val.resize_with(self.num_blk, Default::default);
     }
 
+    /// set zero to all the values
     pub fn set_zero(&mut self) {
         assert_eq!(self.idx2val.len(), self.idx2col.len());
         for m in self.row2val.iter_mut() { m.set_zero() };
         for m in self.idx2val.iter_mut() { m.set_zero() };
     }
 
+    /// merge element-wise matrix to sparse matrix
     pub fn merge(
         &mut self,
         node2row: &[usize],
         node2col: &[usize],
         emat: &[MAT],
-        merge_buffer: &mut Vec<usize>) {
+        merge_buffer: &mut Vec<usize>)
+//    where MAT1: AsPrimitive<MAT>
+    {
         assert_eq!(emat.len(), node2row.len() * node2col.len());
         merge_buffer.resize(self.num_blk, usize::MAX);
         let col2idx = merge_buffer;
         for inode in 0..node2row.len() {
-            let irow = node2row[inode];
-            assert!(irow < self.num_blk);
-            for idx0 in self.row2idx[irow]..self.row2idx[irow + 1] {
-                assert!(idx0 < self.idx2col.len());
-                let icol = self.idx2col[idx0];
-                col2idx[icol] = idx0;
+            let i_row = node2row[inode];
+            assert!(i_row < self.num_blk);
+            for ij_idx in self.row2idx[i_row]..self.row2idx[i_row + 1] {
+                assert!(ij_idx < self.idx2col.len());
+                let j_col = self.idx2col[ij_idx];
+                col2idx[j_col] = ij_idx;
             }
             for jnode in 0..node2col.len() {
-                let jcol = node2col[jnode];
-                assert!(jcol < self.num_blk);
-                if irow == jcol {  // Marge Diagonal
-                    self.row2val[irow] += emat[inode * node2col.len() + jnode];
+                let j_col = node2col[jnode];
+                assert!(j_col < self.num_blk);
+                if i_row == j_col {  // Marge Diagonal
+                    self.row2val[i_row] += emat[inode * node2col.len() + jnode];
                 } else {  // Marge Non-Diagonal
-                    assert!(col2idx[jcol] < self.idx2col.len());
-                    let idx1 = col2idx[jcol];
-                    assert_eq!(self.idx2col[idx1], jcol);
-                    self.idx2val[idx1] += emat[inode * node2col.len() + jnode];
+                    assert!(col2idx[j_col] < self.idx2col.len());
+                    let ij_idx = col2idx[j_col];
+                    assert_eq!(self.idx2col[ij_idx], j_col);
+                    self.idx2val[ij_idx] += emat[inode * node2col.len() + jnode];
                 }
             }
-            for idx0 in self.row2idx[irow]..self.row2idx[irow + 1] {
-                assert!(idx0 < self.idx2col.len());
-                let jcol = self.idx2col[idx0];
-                col2idx[jcol] = usize::MAX;
+            for ij_idx in self.row2idx[i_row]..self.row2idx[i_row + 1] {
+                assert!(ij_idx < self.idx2col.len());
+                let j_col = self.idx2col[ij_idx];
+                col2idx[j_col] = usize::MAX;
             }
         }
     }
@@ -96,7 +101,7 @@ Matrix<MAT> {
 
 /// generalized matrix-vector multiplication
 /// where matrix is sparse (not block) matrix
-/// y <- \alpha * a_mat * x_vec + \beta * y_vec
+/// `{y_vec} <- \alpha * [a_mat] * {x_vec} + \beta * {y_vec}`
 pub fn gemv_for_sparse_matrix<T>(
     y_vec: &mut Vec<T>,
     beta: T,
@@ -106,8 +111,7 @@ pub fn gemv_for_sparse_matrix<T>(
     where T: std::ops::MulAssign // *=
     + std::ops::Mul<Output=T> // *
     + std::ops::AddAssign // +=
-    + 'static + Copy // =
-    + std::fmt::Display,
+    + 'static + Copy, // =
           f32: num_traits::AsPrimitive<T>
 
 {

@@ -1,43 +1,61 @@
-pub fn dot(
-    v0: &[f32],
-    v1: &[f32]) -> f32
+//!  operations on slice of an array
+
+use num_traits::AsPrimitive;
+
+/// dot product
+pub fn dot<T>(
+    v0: &[T],
+    v1: &[T]) -> T
+where
+    T: 'static + Copy + std::ops::Mul<Output = T> + std::ops::AddAssign,
+    f32: AsPrimitive<T>
 {
     assert_eq!(v0.len(), v1.len());
-    let mut sum: f32 = 0.;
+    let mut sum: T = 0_f32.as_();
     for i in 0..v0.len() {
         sum += v0[i] * v1[i];
     }
     sum
 }
 
-pub fn add_scaled_vector(
-    u: &mut [f32],
-    alpha: f32,
-    p: &[f32]) {
+pub fn add_scaled_vector<T>(
+    u: &mut [T],
+    alpha: T,
+    p: &[T])
+where T: std::ops::Mul<Output = T> + std::ops::AddAssign + Copy
+{
     assert_eq!(u.len(), p.len());
     for i in 0..p.len() {
         u[i] += alpha * p[i];
     }
 }
 
-pub fn scale_and_add_vec(
-    p: &mut [f32],
-    beta: f32,
-    r: &[f32]) { // {p} = {r} + beta*{p}
+/// {p} = {r} + beta*{p}
+pub fn scale_and_add_vec<T>(
+    p: &mut [T],
+    beta: T,
+    r: &[T])
+where T: std::ops::Mul<Output = T> + std::ops::Add<Output = T> + Copy
+{
     assert_eq!(r.len(), p.len());
     for i in 0..p.len() {
         p[i] = r[i] + beta * p[i];
     }
 }
 
-pub fn set_zero(
-    p: &mut [f32]) {
-    p.iter_mut().for_each(|v| *v = 0_f32 );
+pub fn set_zero<T>(
+    p: &mut [T])
+where T: 'static + Copy,
+    f32: AsPrimitive<T>
+{
+    p.iter_mut().for_each(|v| *v = 0_f32.as_() );
 }
 
-pub fn copy(
-    p: &mut [f32],
-    u: &[f32]) {
+pub fn copy<T>(
+    p: &mut [T],
+    u: &[T])
+where T: Copy
+{
     assert_eq!(p.len(), u.len());
     for i in 0..p.len() {
         p[i] = u[i];
