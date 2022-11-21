@@ -1,3 +1,5 @@
+//! Sparse Incomplete LU (ILU) factorization Preconditioner
+
 use num_traits::AsPrimitive;
 
 pub struct Preconditioner<T> {
@@ -36,6 +38,7 @@ impl<T> Preconditioner<T>
         }
     }
 
+    /// initialize non-zero pattern as ILU-0, i.e., same as the original matrix
     pub fn initialize_ilu0(
         &mut self,
         a: &crate::sparse_square::Matrix<T>)
@@ -69,6 +72,7 @@ impl<T> Preconditioner<T>
         }
     }
 
+    /// initialize non-zero pattern as full matrix
     pub fn initialize_full(
         &mut self,
         num_row: usize)
@@ -87,23 +91,13 @@ impl<T> Preconditioner<T>
                 self.idx2col[i_row * (num_row - 1) + j_col - 1] = j_col;
             }
         }
-        self.row2idx_dia = vec!(0_usize; num_row);
-        for i_row in 0..num_row {
-            self.row2idx_dia[i_row] = self.row2idx[i_row + 1];
-            for ij_idx in self.row2idx[i_row]..self.row2idx[i_row + 1] {
-                assert!(ij_idx < self.idx2col.len());
-                let j_col = self.idx2col[ij_idx];
-                assert!(j_col < num_row);
-                if j_col > i_row {
-                    self.row2idx_dia[i_row] = ij_idx;
-                    break;
-                }
-            }
-        }
+        self.row2idx_dia = (0..num_row).map(|i| i*num_row).collect();
         self.idx2val = vec!(T::zero(); self.idx2col.len());
         self.row2val = vec!(T::zero(); num_row);
     }
 
+    /// initialize non-zero pattern with ILU-k symbolic factorization
+    /// * `fill-level` - fill-in level
     pub fn initialize_iluk(
         &mut self,
         a: &crate::sparse_square::Matrix<T>,
@@ -261,13 +255,13 @@ fn symbolic_iluk(
     for i_row in 0..num_row {
         let mut col2lev = std::collections::BTreeMap::<usize, usize>::new();
         let mut que0 = std::collections::BTreeSet::<usize>::new();
-        for j_col in &a_idx2col[a_row2idx[i_row]..a_row2idx[i_row + 1]] {
-            col2lev.insert(*j_col, 0);
-            if *j_col < i_row {
-                que0.insert(*j_col);
+        for &j_col in &a_idx2col[a_row2idx[i_row]..a_row2idx[i_row + 1]] {
+            col2lev.insert(j_col, 0);
+            if j_col < i_row {
+                que0.insert(j_col);
             }
         }
-        loop {
+        loop { // loop while que is not empty
             let k_colrow = match que0.iter().next() {
                 None => break,
                 Some(x) => x.clone()
@@ -297,10 +291,11 @@ fn symbolic_iluk(
         {  // finalize this row
             let ij_idx1 = row2idx[i_row] + col2lev.len();
             idx2collev.reserve(row2idx[i_row] + col2lev.len());
-            for collev in col2lev.iter() {
-                idx2collev.push([*collev.0, *collev.1]);
+            for (&col, &lev) in col2lev.iter() {
+                idx2collev.push([col, lev]);
             }
             row2idx[i_row + 1] = ij_idx1;
+            // set row2idx_dia
             row2idx_dia[i_row] = ij_idx1;
             for ij_idx1 in row2idx[i_row]..row2idx[i_row + 1] {
                 let j_col = idx2collev[ij_idx1][0];
