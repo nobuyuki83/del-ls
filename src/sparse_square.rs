@@ -1,7 +1,7 @@
 //! (block) sparse matrix class and functions
 
 /// block sparse matrix class
-/// Compressed Row Storage (CRS) data strcuture
+/// Compressed Row Storage (CRS) data structure
 /// * `num_blk` - number of row and col blocks
 pub struct Matrix<MAT> {
     pub num_blk: usize,
