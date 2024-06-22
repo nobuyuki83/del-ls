@@ -116,8 +116,7 @@ where
 
     if num_dim == 1 {
         sparse_ilu::solve_preconditioning_vec(pr_vec, &ilu); // ilu.SolvePrecond(Pr_vec.data());
-    }
-    else {
+    } else {
         todo!();
     }
 
@@ -130,8 +129,7 @@ where
         // {Ap} = [A]{p}
         if num_dim == 1 {
             sparse_square::mult_vec(pr_vec, T::zero(), T::one(), mat, p_vec);
-        }
-        else {
+        } else {
             sparse_square::mult_mat(pr_vec, T::zero(), T::one(), mat, p_vec);
         }
         {
@@ -156,8 +154,7 @@ where
             // {Pr} = [P]{r}
             if num_dim == 1 {
                 sparse_ilu::solve_preconditioning_vec(pr_vec, &ilu);
-            }
-            else {
+            } else {
                 todo!();
             }
             // rPr1 = ({r},{Pr})
