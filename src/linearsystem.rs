@@ -18,13 +18,17 @@ pub struct Solver<T> {
     pub p_vec: Vec<T>,
 }
 
-
 impl<T> Solver<T>
-    where
-        T: 'static + Copy + num_traits::Float
-        + std::default::Default + std::ops::AddAssign + std::fmt::Display
-        + std::ops::MulAssign + std::ops::SubAssign,
-        f32: num_traits::AsPrimitive<T>
+where
+    T: 'static
+        + Copy
+        + num_traits::Float
+        + std::default::Default
+        + std::ops::AddAssign
+        + std::fmt::Display
+        + std::ops::MulAssign
+        + std::ops::SubAssign,
+    f32: num_traits::AsPrimitive<T>,
 {
     pub fn new() -> Self {
         Solver {
@@ -41,10 +45,7 @@ impl<T> Solver<T>
         }
     }
 
-    pub fn initialize(
-        &mut self,
-        colind: &Vec<usize>,
-        rowptr: &Vec<usize>) {
+    pub fn initialize(&mut self, colind: &Vec<usize>, rowptr: &Vec<usize>) {
         self.sparse.symbolic_initialization(&colind, &rowptr);
         //self.ilu.initialize(&self.sparse);
         let nblk = colind.len() - 1;
@@ -56,16 +57,14 @@ impl<T> Solver<T>
     }
 
     /// set zero to the matrix
-    pub fn begin_mearge(
-        &mut self) {
+    pub fn begin_merge(&mut self) {
         self.sparse.set_zero();
         let nblk = self.sparse.num_blk;
         self.r_vec.resize(nblk, T::zero());
         self.r_vec.iter_mut().for_each(|v| v.set_zero());
     }
 
-    pub fn end_mearge(
-        &mut self) {
+    pub fn end_merge(&mut self) {
         // apply boundary condition here
         crate::sparse_ilu::copy_value(&mut self.ilu, &self.sparse);
         crate::sparse_ilu::decompose(&mut self.ilu);
@@ -73,18 +72,27 @@ impl<T> Solver<T>
 
     pub fn solve_cg(&mut self) {
         self.conv = crate::solver_sparse::conjugate_gradient(
-            &mut self.r_vec, &mut self.u_vec,
-            &mut self.ap_vec, &mut self.p_vec,
-            self.conv_ratio_tol, self.max_num_iteration,
-            &self.sparse);
+            &mut self.r_vec,
+            &mut self.u_vec,
+            &mut self.ap_vec,
+            &mut self.p_vec,
+            self.conv_ratio_tol,
+            self.max_num_iteration,
+            &self.sparse,
+        );
     }
 
     pub fn solve_pcg(&mut self) {
         self.conv = crate::solver_sparse::preconditioned_conjugate_gradient(
-            &mut self.r_vec, &mut self.u_vec,
-            &mut self.ap_vec, &mut self.p_vec,
-            self.conv_ratio_tol, self.max_num_iteration,
-            &self.sparse, &self.ilu);
+            &mut self.r_vec,
+            &mut self.u_vec,
+            &mut self.ap_vec,
+            &mut self.p_vec,
+            self.conv_ratio_tol,
+            self.max_num_iteration,
+            &self.sparse,
+            &self.ilu,
+        );
     }
 
     pub fn clone(&self) -> Self {

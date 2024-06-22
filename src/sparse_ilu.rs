@@ -12,14 +12,14 @@ pub struct Preconditioner<T> {
 }
 
 impl<T> Preconditioner<T>
-    where
-        T: 'static + Copy + num_traits::Zero,
-        f32: AsPrimitive<T>
+where
+    T: 'static + Copy + num_traits::Zero,
+    f32: AsPrimitive<T>,
 {
     pub fn new() -> Self {
         Preconditioner {
             num_blk: 0,
-            row2idx: vec!(0),
+            row2idx: vec![0],
             idx2col: Vec::<usize>::new(),
             idx2val: Vec::<T>::new(),
             row2val: Vec::<T>::new(),
@@ -39,17 +39,14 @@ impl<T> Preconditioner<T>
     }
 
     /// initialize non-zero pattern as ILU-0, i.e., same as the original matrix
-    pub fn initialize_ilu0(
-        &mut self,
-        a: &crate::sparse_square::Matrix<T>)
-    {
+    pub fn initialize_ilu0(&mut self, a: &crate::sparse_square::Matrix<T>) {
         let num_row = a.num_blk;
         self.num_blk = num_row;
         self.row2idx = a.row2idx.clone();
         self.idx2col = a.idx2col.clone();
-        self.idx2val = vec!(T::zero(); a.idx2col.len());
-        self.row2val = vec!(T::zero(); num_row);
-        self.row2idx_dia = vec!(0_usize; num_row);
+        self.idx2val = vec![T::zero(); a.idx2col.len()];
+        self.row2val = vec![T::zero(); num_row];
+        self.row2idx_dia = vec![0_usize; num_row];
         // ---------------
         // sort idx2col
         for i_row in 0..num_row {
@@ -73,16 +70,13 @@ impl<T> Preconditioner<T>
     }
 
     /// initialize non-zero pattern as full matrix
-    pub fn initialize_full(
-        &mut self,
-        num_row: usize)
-    {
+    pub fn initialize_full(&mut self, num_row: usize) {
         self.num_blk = num_row;
         self.row2idx.resize(num_row + 1, 0_usize);
         for i_row in 0..num_row + 1 {
             self.row2idx[i_row] = i_row * (num_row - 1);
         }
-        self.idx2col = vec!(0_usize; num_row * (num_row - 1));
+        self.idx2col = vec![0_usize; num_row * (num_row - 1)];
         for i_row in 0..num_row {
             for j_col in 0..i_row {
                 self.idx2col[i_row * (num_row - 1) + j_col] = j_col;
@@ -91,38 +85,33 @@ impl<T> Preconditioner<T>
                 self.idx2col[i_row * (num_row - 1) + j_col - 1] = j_col;
             }
         }
-        self.row2idx_dia = (0..num_row).map(|i| i*num_row).collect();
-        self.idx2val = vec!(T::zero(); self.idx2col.len());
-        self.row2val = vec!(T::zero(); num_row);
+        self.row2idx_dia = (0..num_row).map(|i| i * num_row).collect();
+        self.idx2val = vec![T::zero(); self.idx2col.len()];
+        self.row2val = vec![T::zero(); num_row];
     }
 
     /// initialize non-zero pattern with ILU-k symbolic factorization
     /// * `fill-level` - fill-in level
-    pub fn initialize_iluk(
-        &mut self,
-        a: &crate::sparse_square::Matrix<T>,
-        lev_fill: usize) {
+    pub fn initialize_iluk(&mut self, a: &crate::sparse_square::Matrix<T>, lev_fill: usize) {
         if lev_fill == 0 {
             self.initialize_ilu0(a);
             return;
         }
-        (self.row2idx, self.idx2col, self.row2idx_dia) = symbolic_iluk(
-            &a.row2idx, a.idx2col.clone(), lev_fill);
+        (self.row2idx, self.idx2col, self.row2idx_dia) =
+            symbolic_iluk(&a.row2idx, a.idx2col.clone(), lev_fill);
         self.num_blk = self.row2idx.len() - 1;
         self.idx2val.resize(self.idx2col.len(), T::zero());
         self.row2val.resize(self.num_blk, T::zero());
     }
 }
 
-pub fn copy_value<T>(
-    ilu: &mut Preconditioner<T>,
-    a: &crate::sparse_square::Matrix<T>)
-    where
-        T: num_traits::Zero + Copy
+pub fn copy_value<T>(ilu: &mut Preconditioner<T>, a: &crate::sparse_square::Matrix<T>)
+where
+    T: num_traits::Zero + Copy,
 {
     let num_row = ilu.num_blk;
     assert_eq!(a.num_blk, num_row);
-    let mut col2idx = vec!(usize::MAX; num_row);
+    let mut col2idx = vec![usize::MAX; num_row];
     // copy diagonal value
     crate::slice::copy(&mut ilu.row2val, &a.row2val);
     // copy off-diagonal values
@@ -154,14 +143,13 @@ pub fn copy_value<T>(
     }
 }
 
-pub fn decompose<T>(
-    ilu: &mut Preconditioner<T>)
-    where
-        T: 'static + Copy + std::ops::Mul<Output=T> + std::ops::SubAssign + std::ops::Div<Output=T>,
-        f32: AsPrimitive<T>
+pub fn decompose<T>(ilu: &mut Preconditioner<T>)
+where
+    T: 'static + Copy + std::ops::Mul<Output = T> + std::ops::SubAssign + std::ops::Div<Output = T>,
+    f32: AsPrimitive<T>,
 {
     let num_row = ilu.num_blk;
-    let mut col2idx = vec!(usize::MAX; num_row);
+    let mut col2idx = vec![usize::MAX; num_row];
     for i_row in 0..num_row {
         for ij_idx in ilu.row2idx[i_row]..ilu.row2idx[i_row + 1] {
             assert!(ij_idx < ilu.idx2col.len());
@@ -180,7 +168,9 @@ pub fn decompose<T>(
                 let kj_val = ilu.idx2val[kj_idx];
                 if j_col != i_row {
                     let ij_idx = col2idx[j_col];
-                    if ij_idx == usize::MAX { continue; }
+                    if ij_idx == usize::MAX {
+                        continue;
+                    }
                     ilu.idx2val[ij_idx] -= ik_val * kj_val;
                 } else {
                     ilu.row2val[i_row] -= ik_val * kj_val;
@@ -200,15 +190,14 @@ pub fn decompose<T>(
             assert!(j_col < num_row);
             col2idx[j_col] = usize::MAX;
         }
-    }    // end iblk
+    } // end iblk
 }
 
-pub fn solve_preconditioning<T>(
-    vec: &mut Vec<T>,
-    ilu: &Preconditioner<T>)
-    where
-        T: Copy + std::ops::Mul<Output=T> + std::ops::SubAssign
+pub fn solve_preconditioning_vec<T>(vec: &mut Vec<T>, ilu: &Preconditioner<T>)
+where
+    T: Copy + std::ops::Mul<Output = T> + std::ops::SubAssign,
 {
+    assert_eq!(vec.len(), ilu.row2val.len());
     // forward
     let num_row = ilu.num_blk;
     for i_row in 0..num_row {
@@ -238,16 +227,16 @@ pub fn solve_preconditioning<T>(
 fn symbolic_iluk(
     a_row2idx: &Vec<usize>,
     mut a_idx2col: Vec<usize>,
-    lev_fill: usize) -> (Vec<usize>, Vec<usize>, Vec<usize>)
-{
+    lev_fill: usize,
+) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
     let num_row = a_row2idx.len() - 1;
     for i_row in 0..num_row {
         let idx0 = a_row2idx[i_row];
         let idx1 = a_row2idx[i_row + 1];
         a_idx2col[idx0..idx1].sort();
     }
-    let mut row2idx = vec!(0_usize; num_row + 1);
-    let mut row2idx_dia = vec!(0; num_row);
+    let mut row2idx = vec![0_usize; num_row + 1];
+    let mut row2idx_dia = vec![0; num_row];
 
     let mut idx2collev = Vec::<[usize; 2]>::new();
     idx2collev.reserve(a_idx2col.len() * 4);
@@ -261,34 +250,48 @@ fn symbolic_iluk(
                 que0.insert(j_col);
             }
         }
-        loop { // loop while que is not empty
+        loop {
+            // loop while que is not empty
             let k_colrow = match que0.iter().next() {
                 None => break,
-                Some(x) => x.clone()
+                Some(x) => x.clone(),
             };
             que0.remove(&k_colrow);
             assert!(k_colrow < i_row);
             let ik_lev0 = col2lev.get(&k_colrow).unwrap().clone();
-            if ik_lev0 + 1 > lev_fill { continue; } // move next
+            if ik_lev0 + 1 > lev_fill {
+                continue;
+            } // move next
             for kj_idx in row2idx_dia[k_colrow]..row2idx[k_colrow + 1] {
                 let kj_lev0 = idx2collev[kj_idx][1];
-                if kj_lev0 + 1 > lev_fill { continue; }
+                if kj_lev0 + 1 > lev_fill {
+                    continue;
+                }
                 let j_col = idx2collev[kj_idx][0];
                 assert!(j_col > k_colrow && j_col < num_row);
-                if j_col == i_row { continue; } // already filled-in on the diagonal
+                if j_col == i_row {
+                    continue;
+                } // already filled-in on the diagonal
                 let max_lev0 = if ik_lev0 > kj_lev0 { ik_lev0 } else { kj_lev0 };
                 if j_col < i_row {
                     que0.insert(j_col);
                 }
                 match col2lev.get_mut(&j_col) {
-                    None => { col2lev.insert(j_col, max_lev0 + 1); }
+                    None => {
+                        col2lev.insert(j_col, max_lev0 + 1);
+                    }
                     Some(lev) => {
-                        *lev = if *lev < max_lev0 + 1 { *lev } else { max_lev0 + 1 };
+                        *lev = if *lev < max_lev0 + 1 {
+                            *lev
+                        } else {
+                            max_lev0 + 1
+                        };
                     }
                 }
             }
         }
-        {  // finalize this row
+        {
+            // finalize this row
             let ij_idx1 = row2idx[i_row] + col2lev.len();
             idx2collev.reserve(row2idx[i_row] + col2lev.len());
             for (&col, &lev) in col2lev.iter() {
@@ -307,7 +310,7 @@ fn symbolic_iluk(
         }
     }
 
-    let mut idx2col = vec!(0_usize; idx2collev.len());
+    let mut idx2col = vec![0_usize; idx2collev.len()];
     for icrs in 0..idx2col.len() {
         idx2col[icrs] = idx2collev[icrs][0];
     }
